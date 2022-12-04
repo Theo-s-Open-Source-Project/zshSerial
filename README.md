@@ -15,7 +15,7 @@
 
 ![x](image/x.png)
 
-​		该项目为本人的一次课设，在很多项目开发中，都需要通过上位机来控制或者读取 MCU、MPU 中的数据。上位机和设备间的通信协议有串口、CAN、RS485 等等。本项目基于 python 编写，将串口获取到的数据显示在上位机中，并将数据以可视化图形显示出来。废话少说，上图！！！
+该项目为本人的一次课设，在很多项目开发中，都需要通过上位机来控制或者读取 MCU、MPU 中的数据。上位机和设备间的通信协议有串口、CAN、RS485 等等。本项目基于 python 编写，将串口获取到的数据显示在上位机中，并将数据以可视化图形显示出来。废话少说，上图！！！
 
 <img src="image/2.png" alt="2" style="zoom:50%;" />
 
@@ -33,7 +33,7 @@
 
 ### 3.1 准备工作
 
-​		本项目用到的库有 tkinter、pyserial、matplotlib、pyautogui、configparser、webbrowser 等，其中 pyserial 与 pyautogui 需要自行安装其余库皆是 python 自带库。如没有安装过这两个库可以使用以下命令安装。
+本项目用到的库有 tkinter、pyserial、matplotlib、pyautogui、configparser、webbrowser 等，其中 pyserial 与 pyautogui 需要自行安装其余库皆是 python 自带库。如没有安装过这两个库可以使用以下命令安装。
 
 ```shell
 pip install pyserial
@@ -44,7 +44,7 @@ pip install pyautogui
 
 ### 3.2 编写串口上位机界面
 
-​		首先，先将上位机基本界面框架搭建好，此部分给出代码自行研究。
+首先，先将上位机基本界面框架搭建好，此部分给出代码自行研究。
 
 ```python
 from tkinter import *
@@ -188,7 +188,7 @@ if __name__ == "__main__":
 
 ![4](image/4.png)
 
-​		现在界面还是太简陋了，接下来增加 menu 菜单栏。这里用到了 ttk 子模块，因为 tkinter 没有下拉菜单控件，代码如下：
+现在界面还是太简陋了，接下来增加 menu 菜单栏。这里用到了 ttk 子模块，因为 tkinter 没有下拉菜单控件，代码如下：
 
 ```python
 from tkinter import ttk  # 导入ttk模块，因为Combobox下拉菜单控件在ttk中
@@ -254,10 +254,10 @@ class MENU:
 
 ![5](image/5.png)
 
-​		到此，我们的界面已经搭建完成了，接下来就是注入灵魂的时候，为其增加功能函数。
+到此，我们的界面已经搭建完成了，接下来就是注入灵魂的时候，为其增加功能函数。
 
 
 
 ### 3.3 功能实现
 
-​		<font color="blue"> **咕咕几天，马上更新** </font>
+<font color="blue"> **咕咕几天，马上更新** </font>
