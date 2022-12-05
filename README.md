@@ -257,7 +257,230 @@ class MENU:
 到此，我们的界面已经搭建完成了，接下来就是注入灵魂的时候，为其增加功能函数。
 
 
-
 ### 3.3 功能实现
+
+
+
+#### 3.3.1 基本功能
+
+在进行通信前，要先获取电脑可用串口进行连接，借助 pyserial 库的 `serial.tools.list_ports.comports()` 获取电脑目前所有串口号。
+
+```python
+    @staticmethod
+    def getSerialPort():
+        port = []
+        portList = list(serial.tools.list_ports.comports())
+        # print(portList)
+
+        if len(portList) == 0:
+            print("--- 无串口 ---")
+            port.append('None')
+        else:
+            for comport in portList:
+                # print(list(comport)[0])
+                # print(list(comport)[1])
+                port.append(list(comport)[0])
+                pass
+        return port
+```
+
+获取到串口号后，将其显示在 tkinter 的 combobox 控件中。
+
+```python
+self.serial_combobox['value'] = zsh_serial.getSerialPort()
+```
+
+接下来就是打开串口，这里不做详细讲解（如需要的话评论区留言🦄）给出具体实现代码。
+
+```python
+    def openSerial(self, port, bps, timeout):
+        """
+        打开串口
+        :param port: 端口号
+        :param bps: 波特率
+        :param timeout: 超时时间
+        :return: True or False
+        """
+        ser_flag = False
+        try:
+            # 打开串口
+            self.com = serial.Serial(port, bps, timeout=timeout)
+            if self.com.isOpen():
+                ser_flag = True
+                # threading.Thread(target=self.readSerial, args=(self.com,)).start()
+                # print("Debug: 串口已打开\n")
+            # else:
+            #     print("Debug: 串口未打开")
+        except Exception as e:
+            print("error: ", e)
+            error = "error: {}".format(e)
+            showerror('error', error)
+        return self.com, ser_flag
+```
+
+将其与打开串口 button 事件进行绑定，代码如下：
+
+```python
+ ... 
+        self.serial_btn_str = StringVar()
+        self.serial_btn_str.set("打开串口")
+        serial_btn = Button(group_serial_event, textvariable=self.serial_btn_str, command=self.hit1)  # 添加点击事件
+        serial_btn.grid(row=1, column=0, padx=55, pady=10)
+ ...
+    
+    def hit1(self):
+        """
+        打开串口按钮回调
+        """
+        # print(self.com.isOpen())
+        if self.com.isOpen():
+            self.com.close()
+            print("--- 串口未打开 ---")
+            self.serial_btn_flag_str.set("串口未打开")
+            self.serial_btn_str.set("打开串口")
+        else:
+            self.com, ser_flag = self.openSerial(self.serial_combobox.get(), self.bound_combobox.get(), None)
+            if ser_flag:
+                print("--- 串口已打开 ---")
+                self.serial_btn_flag_str.set("串口已打开")
+                self.serial_btn_str.set("关闭串口")
+```
+
+到此，一个串口调试助手的最基本功能就实现了，接下来就是让串口获取到的信息显示到上位机中的 txt 控件上。
+
+![6](image/6.png)
+
+我们该如何实时获取并打印串口中的数据呢，这里使用一个线程不断的去读取。
+
+```python
+    def readSerial(self, com):
+        """
+        读取串口数据
+        :return:
+        """
+        global serialData
+        while True:
+            if self.com.in_waiting:
+                textSetial = self.com.read(self.com.in_waiting)
+                serialData = textSetial
+                # print(textSetial)
+                self.txt.config(state=NORMAL)
+                self.txt.insert(END, textSetial)
+                self.txt.config(state=DISABLED)
+            # print("Debug: thread_readSerial is running")
+```
+
+![7](image/7.png)
+
+基本功能实现，但现在的上位机还是太单调了，接下来就是整活时间😋
+
+
+
+#### 3.3.2 整活
+
+在最开始时，我们创建了一行菜单栏，接下来为其注入灵魂！
+
+![8](image/8.png)
+
+首先是这款上位机的重中之重 <font color="blue">**”折线图“**</font>（注：当前版本的折线图数据非串口获取到到**真实数据**，仅做功能演示！！）
+
+![9](image/9.png)
+
+```python
+    def createTempWindow(self):
+        """
+        创建新的窗口
+        """
+        new_window = self.window
+        new_window.title("温度折线图")
+        new_window.geometry("720x480")
+        # Button(new_window,
+        #        text="This is new window").pack()
+
+        # 创建一个容器, 没有画布时的背景
+        frame = Frame(new_window, bg="#ffffff")
+        frame.place(x=0, y=0, width=720, height=480)
+        plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
+        fig = plt.figure(figsize=(6, 3.9), edgecolor='blue')
+        # 定义刻度
+        ax = fig.add_subplot(111)
+        ax.set(xlim=[0, 121], ylim=[0, 40], title="温度折线图", ylabel='温度/°C')
+        canvas = FigureCanvasTkAgg(fig, master=frame)
+        canvas.draw()
+        # 显示画布
+        canvas.get_tk_widget().place(x=0, y=0)
+
+        # 定义存储坐标的空数组
+        self.i = 0
+        self.x = []
+        self.y = []
+
+        def drawTemp():
+            global tempData
+            self.i += 1
+            # time.sleep(1)
+            ax.clear()
+            ax.set(xlim=[0, 121], ylim=[0, 40], title="温度折线图", ylabel='温度/°C')
+            t = self.i
+            if t >= 120:
+                bye()
+            dtax = t
+            self.x.append(dtax)
+            # 温度数据处理
+            """
+            xxxxxxxxxxxxxxxxxxxxx
+            """
+            dtay = random.randint(22, 36)
+            # print(dtay)
+            self.y.append(dtay)
+            ax.plot(self.x, self.y)
+            canvas.draw()
+            self.afterHandler = self.window.after(100, drawTemp)
+
+        drawTemp()
+
+        def bye():
+            plt.close('all')
+            new_window.destroy()
+            self.window.mainloop()
+
+        new_window.protocol("WM_DELETE_WINDOW", bye)
+
+        # 窗口循环显示
+        new_window.mainloop()
+```
+
+将其与菜单栏的回调进行绑定，这里加了一个专业版和社区版的识别函数（是不是有 B 格起来了😎）
+
+```python
+    @staticmethod
+    def callback5():
+        config = version.config()
+        if config['power'] == 'Professional':
+            print("--- 温度折线图 ---")
+            new_win = zsh_serial()
+            new_win.createTempWindow()
+```
+
+通过读取存放在 config.ini 中的 JSON 数据进行分析判断是专业版还是社区版来赋予访问折线图的权限。
+
+```python
+from configparser import ConfigParser
+
+class version:
+    @staticmethod
+    def config():
+        """
+        获取配置文件
+        :return: 读取到的配置文件信息
+        """
+        config = ConfigParser()
+        config.read("src\\config.ini")
+        cfg = dict(config.items("config"))  # 字符串转换为字典
+        # print(cfg)
+        # print(cfg['version'])
+        return cfg
+```
+
 
 <font color="blue"> **咕咕几天，马上更新** </font>
