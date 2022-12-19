@@ -8,12 +8,15 @@
   * [3\.1 准备工作](#31-准备工作)
   * [3\.2 编写串口上位机界面](#32-编写串口上位机界面)
   * [3\.3 功能实现](#33-功能实现)
+	  * [3\.3\.1 基本功能](#331-基本功能)
+	  * [3\.3\.2 整活](#332-整活)
+  * [3\.4 打包 exe 可执行文件](#34-打包 exe 可执行文件)
 
 
 
 ## 1. 项目介绍
 
-![x](image/x.png)
+<img src="image/1.png" alt="1" style="zoom: 25%;" />
 
 该项目为本人的一次课设，在很多项目开发中，都需要通过上位机来控制或者读取 MCU、MPU 中的数据。上位机和设备间的通信协议有串口、CAN、RS485 等等。本项目基于 python 编写，将串口获取到的数据显示在上位机中，并将数据以可视化图形显示出来。废话少说，上图！！！
 
@@ -221,7 +224,7 @@ from tkinter import ttk  # 导入ttk模块，因为Combobox下拉菜单控件在
  # ... 略
 ```
 
-​		这一步完成后，是运行不了的，我们要为菜单栏增加回调函数。
+这一步完成后，是运行不了的，我们要为菜单栏增加回调函数。
 
 ```python
 import webbrowser
@@ -255,6 +258,7 @@ class MENU:
 ![5](image/5.png)
 
 到此，我们的界面已经搭建完成了，接下来就是注入灵魂的时候，为其增加功能函数。
+
 
 
 ### 3.3 功能实现
@@ -462,6 +466,8 @@ self.serial_combobox['value'] = zsh_serial.getSerialPort()
             new_win.createTempWindow()
 ```
 
+![10](image/10.png)
+
 通过读取存放在 config.ini 中的 JSON 数据进行分析判断是专业版还是社区版来赋予访问折线图的权限。
 
 ```python
@@ -482,5 +488,94 @@ class version:
         return cfg
 ```
 
+社区版会弹出提示框，这里放的二维码是俺的博客地址。实现方法也非常简单，简单来说就是新建一个窗口并显示。这里需要注意的是 tkinter 库的 PhotoImage 函数只能显示 gif 格式的图片，所以需要进行一个图片格式转换。
 
-<font color="blue"> **咕咕几天，马上更新** </font>
+![14](image/14.png)
+
+![15](image/15.png)
+
+保存串口信息功能（如下图），实现方法其实很简单，因为在前面将 txt 窗口设为只读模式，所以 copy 串口打印信息时，需要将 txt 控件解除只读，为了保证串口数据不被人为的误改， get 数据后再将其恢复为只读模式。将获取到的数据保存到 txt 文件中，默认保存路径位桌面，这里用到了 `os.getlogin()` 获取系统用户名。
+
+```python
+    def window_save(self):
+        self.txt.config(state=NORMAL)
+        result = self.txt.get("1.0", "end")
+        self.txt.config(state=DISABLED)
+
+        with open('C:\\Users\\{}\\Desktop\\zshSerial.txt'.format(os.getlogin()), 'w') as f:
+            for text in result:
+                f.write(text)
+```
+
+![11](image/11.png)
+
+![12](image/12.png)
+
+![13](image/13.png)
+
+还记得上面有提到过的更新检测吗（~~好像没有提到过~~ bushi 😎），通过对比服务器上的版本信息进行判断，如果有时间下个版本会更新在线升级（咕咕~🕊）。
+
+![16](image/16.png)
+
+```python
+    @staticmethod
+    def callback9():
+        print("--- 更新检测 ---")
+        import requests
+        ver = requests.get('http://xxx.xxx.xxx.xx/download/open-source-project/zshSerial/version.txt')
+        print(ver.text)
+        config = version.config()
+        if "lastest: v{}".format(config['version']) == ver.text:
+            versionCheck = "当前版本：v{} 为最新版".format(config['version'])
+            showinfo('更新检测', versionCheck)
+        else:
+            versionCheck = "当前版本：v{} 版本过低，请及时更新".format(config['version'])
+            showwarning('更新检测', versionCheck)
+            version.update()
+```
+
+![17](image/17.png)
+
+
+
+### 3.4 打包 exe 可执行文件
+
+
+
+首先，我们从 GitHub 仓库将源码克隆到本地。
+
+```git
+git clone https://github.com/Theo-s-Open-Source-Project/zshSerial.git
+```
+克隆下来的文件夹结构如下：
+
+```
+.
+├── data  			//存放一些数据
+│   ├──COM.png
+│   ├──blog.gif
+│   ├──xxx.ico
+│   ├──readme.txt
+├── image           //README文件的图片
+├── src             //zshSerial库
+│   ├──__pycache__
+│   ├──config.ini
+│   ├──parameter.py
+│   ├──ui.py
+├── .gitignore       
+├── LICENSE       
+├── README.md       //README文档
+├── zshSerial.py    //main函数   
+```
+
+准备好后，（这里使用 pyinstaller 打包）打开终端，输入以下命令进行打包。
+
+```python
+pyinstaller -D -w -i 1.ico zshSerial.py
+```
+
+![18](image/18.png)
+
+打包好的程序存放在当前目录的 dist 文件夹下，用 pyinstaller 打包的文件夹有些许大，这里有几种方法可以压缩（自行百度），but 俺懒得尝试了，使用最简单粗暴的方法 delete!!! 哈哈哈。确保 exe 文件有在运行，选中所有的 .dll 文件 delete 即可。
+
+![19](image/19.png)
